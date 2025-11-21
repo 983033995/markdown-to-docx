@@ -199,20 +199,23 @@ step_document_options() {
     show_header
     echo -e "${BOLD}步骤 2/3: 文档选项${NC}"
     echo ""
-    echo -e "输出格式: ${GREEN}${OUTPUT_FORMAT^^}${NC}"
+    # 兼容 bash 3.2 的大写转换
+    local format_upper=$(echo "$OUTPUT_FORMAT" | tr '[:lower:]' '[:upper:]')
+    echo -e "输出格式: ${GREEN}${format_upper}${NC}"
     echo ""
     
     read_input "生成目录? (Y/n)" "$TOC_ENABLED" TOC_ENABLED
-    TOC_ENABLED="${TOC_ENABLED,,}"  # 转小写
+    TOC_ENABLED=$(echo "$TOC_ENABLED" | tr '[:upper:]' '[:lower:]')  # 转小写
     
     read_input "章节编号? (Y/n)" "$NUMBER_SECTIONS" NUMBER_SECTIONS
-    NUMBER_SECTIONS="${NUMBER_SECTIONS,,}"
+    NUMBER_SECTIONS=$(echo "$NUMBER_SECTIONS" | tr '[:upper:]' '[:lower:]')
 }
 
 # 步骤3: 格式特定配置
 step_format_specific() {
     show_header
-    echo -e "${BOLD}步骤 3/3: ${OUTPUT_FORMAT^^} 特定配置${NC}"
+    local format_upper=$(echo "$OUTPUT_FORMAT" | tr '[:lower:]' '[:upper:]')
+    echo -e "${BOLD}步骤 3/3: ${format_upper} 特定配置${NC}"
     echo ""
     
     case $OUTPUT_FORMAT in
