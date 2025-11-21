@@ -1,8 +1,1 @@
-#!/bin/bash
-# Markdown to DOCX 全局命令
-
-# 获取安装目录
-INSTALL_DIR="$(cd "$(dirname "$(dirname "$(readlink -f "$0" || echo "$0")")")" && pwd)"
-
-# 调用转换脚本
-"$INSTALL_DIR/scripts/convert.sh" "$@"
+mdconv
