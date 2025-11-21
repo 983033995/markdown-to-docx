@@ -25,11 +25,23 @@ detect_os() {
     if [[ "$OSTYPE" == "darwin"* ]]; then
         OS="macos"
         echo -e "${GREEN}✓ 检测到 macOS 系统${NC}"
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    elif [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "linux" ]]; then
         OS="linux"
         echo -e "${GREEN}✓ 检测到 Linux 系统${NC}"
+        
+        # 检测 Linux 发行版
+        if [ -f /etc/os-release ]; then
+            . /etc/os-release
+            LINUX_DISTRO=$ID
+            echo -e "${BLUE}  发行版: $NAME${NC}"
+        fi
+    elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+        echo -e "${YELLOW}✓ 检测到 Windows (Git Bash/Cygwin)${NC}"
+        echo -e "${YELLOW}  建议使用 PowerShell 运行 install.ps1${NC}"
+        OS="windows"
     else
         echo -e "${RED}✗ 不支持的操作系统: $OSTYPE${NC}"
+        echo -e "${YELLOW}  支持的系统: macOS, Linux, Windows${NC}"
         exit 1
     fi
 }

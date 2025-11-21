@@ -14,13 +14,26 @@
 
 ## 📋 系统要求
 
-- macOS (已在 macOS 上测试)
-- Homebrew
-- Hammerspoon (用于 GUI 界面)
+### macOS
+- macOS 10.15+
+- Homebrew (自动安装)
+- Hammerspoon (可选,用于 GUI 界面)
+
+### Windows
+- Windows 10/11
+- PowerShell 5.1+
+- Chocolatey (自动安装)
+- Git for Windows 或 WSL (推荐)
+
+### Linux
+- Ubuntu 20.04+ / Debian 10+ / CentOS 7+
+- apt-get 或 yum 包管理器
 
 ## 🚀 快速开始
 
 ### 一键安装
+
+**macOS / Linux:**
 
 ```bash
 # 克隆仓库
@@ -31,14 +44,26 @@ cd markdown-to-docx
 ./install.sh
 ```
 
+**Windows (PowerShell 管理员模式):**
+
+```powershell
+# 克隆仓库
+git clone https://github.com/983033995/markdown-to-docx.git
+cd markdown-to-docx
+
+# 运行安装脚本
+.\install.ps1
+```
+
 安装脚本会自动:
-- ✅ 检测操作系统 (macOS/Linux)
+
+- ✅ 检测操作系统
 - ✅ 安装 Pandoc
 - ✅ 安装 Node.js
 - ✅ 安装 mermaid-cli
 - ✅ 配置全局 CLI 命令
 - ✅ 创建默认模板
-- ✅ 配置 Hammerspoon (macOS)
+- ✅ 配置 Hammerspoon (仅 macOS)
 
 ### 使用方式
 
