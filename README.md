@@ -20,84 +20,68 @@
 
 ## 🚀 快速开始
 
-### 1. 安装依赖
-
-运行依赖检查脚本,自动安装所需工具:
+### 一键安装
 
 ```bash
-cd /Volumes/13759427003/工具/markdown-to-docx
-./scripts/check_dependencies.sh
+# 克隆仓库
+git clone https://github.com/983033995/markdown-to-docx.git
+cd markdown-to-docx
+
+# 运行安装脚本
+./install.sh
 ```
 
-该脚本会自动安装:
-- Pandoc (文档转换引擎)
-- Node.js (mermaid-cli 依赖)
-- mermaid-cli (Mermaid 图表渲染)
+安装脚本会自动:
+- ✅ 检测操作系统 (macOS/Linux)
+- ✅ 安装 Pandoc
+- ✅ 安装 Node.js
+- ✅ 安装 mermaid-cli
+- ✅ 配置全局 CLI 命令
+- ✅ 创建默认模板
+- ✅ 配置 Hammerspoon (macOS)
 
-### 2. 创建自定义模板 (可选)
+### 使用方式
 
-生成默认 Word 模板:
+#### 方式一: 全局 CLI 命令
 
-```bash
-./scripts/create_template.sh
-```
-
-然后使用 Microsoft Word 打开 `templates/reference.docx` 修改样式。
-
-### 3. 使用方式
-
-#### 方式一: 命令行转换
-
-**单文件转换:**
+安装后可以在任何目录使用:
 
 ```bash
-./scripts/convert.sh document.md
+# 单文件转换
+md2docx document.md
 # 输出: document.docx (在同目录)
-```
 
-**指定输出路径:**
+# 指定输出路径
+md2docx input.md output.docx
 
-```bash
-./scripts/convert.sh input.md output.docx
-```
-
-**批量转换:**
-
-```bash
-./scripts/batch_convert.sh doc1.md doc2.md doc3.md
+# 批量转换
+md2docx-batch doc1.md doc2.md doc3.md
 # 或使用通配符
+md2docx-batch *.md
+```
+
+#### 方式二: 直接调用脚本
+
+```bash
+# 单文件转换
+./scripts/convert.sh document.md
+
+# 批量转换
 ./scripts/batch_convert.sh *.md
 ```
 
-#### 方式二: Hammerspoon GUI 界面
+#### 方式三: Hammerspoon GUI 界面 (macOS)
 
-1. **安装 Hammerspoon 配置:**
+安装脚本会自动配置 Hammerspoon。
 
-```bash
-# 如果已有 Hammerspoon 配置,添加到现有 init.lua:
-# require("markdown-to-docx")
-
-# 或者创建符号链接:
-mkdir -p ~/.hammerspoon
-ln -s /Volumes/13759427003/工具/markdown-to-docx/hammerspoon/init.lua \
-      ~/.hammerspoon/markdown-to-docx.lua
-```
-
-2. **在 Hammerspoon 主配置中加载:**
-
-编辑 `~/.hammerspoon/init.lua`,添加:
-
-```lua
-require("markdown-to-docx")
-```
-
-3. **重新加载 Hammerspoon 配置**
-
-4. **使用界面:**
-   - 点击菜单栏的 📄 图标
-   - 或使用快捷键 `Cmd+Shift+M`
-   - 拖拽文件或点击"选择文件"按钮
-   - 点击"开始转换"
+**使用方法:**
+1. 安装 Hammerspoon: https://www.hammerspoon.org/
+2. 在 `~/.hammerspoon/init.lua` 中添加:
+   ```lua
+   dofile(os.getenv("HOME") .. "/markdown-to-docx/hammerspoon/init.lua")
+   ```
+3. 重新加载 Hammerspoon
+4. 使用快捷键 `Cmd+Shift+M` 打开转换器
 
 ## 📖 支持的 Markdown 元素
 

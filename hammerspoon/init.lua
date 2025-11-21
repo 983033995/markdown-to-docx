@@ -1,10 +1,40 @@
 -- Markdown to DOCX Hammerspoon 界面
 -- 提供图形界面进行 Markdown 到 DOCX 的转换
 
+-- 自动检测项目路径
+local function detectProjectPath()
+    -- 方法1: 从配置文件读取
+    local configFile = os.getenv("HOME") .. "/.md2docx.conf"
+    local f = io.open(configFile, "r")
+    if f then
+        for line in f:lines() do
+            local path = line:match('INSTALL_DIR="(.-)"')
+            if path then
+                f:close()
+                return path
+            end
+        end
+        f:close()
+    end
+    
+    -- 方法2: 使用默认路径
+    local defaultPath = os.getenv("HOME") .. "/markdown-to-docx"
+    local checkFile = defaultPath .. "/scripts/convert.sh"
+    local cf = io.open(checkFile, "r")
+    if cf then
+        cf:close()
+        return defaultPath
+    end
+    
+    -- 方法3: 提示用户
+    hs.alert.show("请先运行 install.sh 安装 Markdown to DOCX")
+    return nil
+end
+
 -- 配置
 local config = {
-    -- 项目路径 (请根据实际情况修改)
-    projectPath = "/Volumes/13759427003/工具/markdown-to-docx",
+    -- 项目路径 (自动检测)
+    projectPath = detectProjectPath(),
     
     -- 窗口配置
     windowWidth = 600,
@@ -13,6 +43,11 @@ local config = {
     -- 支持的文件扩展名
     supportedExtensions = {".md", ".markdown"},
 }
+
+-- 检查项目路径是否有效
+if not config.projectPath then
+    return false
+end
 
 -- 全局变量
 local mainWindow = nil
