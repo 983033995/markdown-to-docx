@@ -145,35 +145,113 @@ configure_hammerspoon() {
     if [[ "$OS" == "macos" ]]; then
         echo -e "${YELLOW}→ 配置 Hammerspoon...${NC}"
         
+        # 创建 Hammerspoon 配置目录
         if [[ ! -d "$HOME/.hammerspoon" ]]; then
             mkdir -p "$HOME/.hammerspoon"
         fi
         
-        # 更新 Hammerspoon 配置中的项目路径
-        sed -i.bak "s|projectPath = \".*\"|projectPath = \"$SCRIPT_DIR\"|g" \
-            "$SCRIPT_DIR/hammerspoon/init.lua"
+        # 复制配置文件到用户目录
+        cp "$SCRIPT_DIR/.md2docx.conf" "$HOME/.md2docx.conf"
+        echo -e "${GREEN}✓ 配置文件已复制到 ~/.md2docx.conf${NC}"
+        
+        # 检查 Hammerspoon init.lua 是否存在
+        local hammerspoon_init="$HOME/.hammerspoon/init.lua"
+        local load_command="dofile(\"$SCRIPT_DIR/hammerspoon/init.lua\")"
+        
+        if [[ ! -f "$hammerspoon_init" ]]; then
+            # 创建新的 init.lua
+            cat > "$hammerspoon_init" << EOF
+-- Hammerspoon 配置文件
+-- 自动生成于 Markdown to DOCX 工具安装
+
+-- 加载 Markdown to DOCX 转换器
+$load_command
+
+-- 显示启动消息
+hs.alert.show("Hammerspoon 配置已加载")
+EOF
+            echo -e "${GREEN}✓ 已创建 Hammerspoon 配置文件${NC}"
+        else
+            # 检查是否已经添加了加载命令
+            if ! grep -q "markdown-to-docx" "$hammerspoon_init"; then
+                # 添加加载命令
+                echo "" >> "$hammerspoon_init"
+                echo "-- Markdown to DOCX 转换器" >> "$hammerspoon_init"
+                echo "$load_command" >> "$hammerspoon_init"
+                echo -e "${GREEN}✓ 已添加到现有 Hammerspoon 配置${NC}"
+            else
+                echo -e "${GREEN}✓ Hammerspoon 配置已存在${NC}"
+            fi
+        fi
         
         # 创建配置说明
         cat > "$SCRIPT_DIR/hammerspoon/README.md" << EOF
 # Hammerspoon 配置
 
-## 安装方式
+## 自动配置完成 ✅
 
+安装脚本已自动完成以下配置:
+
+1. ✅ 复制配置文件到 ~/.md2docx.conf
+2. ✅ 更新 ~/.hammerspoon/init.lua
+3. ✅ 配置项目路径
+
+## 使用方法
+
+### 启动 Hammerspoon
 1. 安装 Hammerspoon: https://www.hammerspoon.org/
+2. 启动 Hammerspoon 应用
+3. 重新加载配置 (Reload Config)
 
-2. 在 ~/.hammerspoon/init.lua 中添加:
+### 使用转换器
+- **快捷键**: Cmd+Shift+M
+- **菜单栏**: 点击 📄 图标
 
+### 功能
+- 选择文件转换
+- 批量转换
+- 实时进度显示
+- 转换完成后打开文件夹
+
+## 故障排除
+
+### 问题: 快捷键无响应
+**解决**: 
+1. 打开 Hammerspoon Console
+2. 查看是否有错误信息
+3. 确认配置文件路径正确: \`cat ~/.md2docx.conf\`
+
+### 问题: 提示"请先运行 install.sh"
+**解决**:
+\`\`\`bash
+# 重新运行安装脚本
+cd $SCRIPT_DIR
+./install.sh
+\`\`\`
+
+### 问题: 转换失败
+**解决**:
+1. 检查依赖: \`./scripts/check_dependencies.sh\`
+2. 测试命令行: \`md2docx test.md\`
+3. 查看 Hammerspoon Console 日志
+
+## 手动配置 (如果需要)
+
+如果自动配置失败,可以手动添加:
+
+编辑 \`~/.hammerspoon/init.lua\`:
 \`\`\`lua
 dofile("$SCRIPT_DIR/hammerspoon/init.lua")
 \`\`\`
 
-3. 重新加载 Hammerspoon 配置
+## 卸载
 
-4. 使用快捷键 Cmd+Shift+M 打开转换器
+从 \`~/.hammerspoon/init.lua\` 中删除相关行即可。
 EOF
         
-        echo -e "${GREEN}✓ Hammerspoon 配置已更新${NC}"
-        echo -e "${BLUE}  查看配置说明: $SCRIPT_DIR/hammerspoon/README.md${NC}"
+        echo -e "${GREEN}✓ Hammerspoon 配置完成${NC}"
+        echo -e "${BLUE}  配置说明: $SCRIPT_DIR/hammerspoon/README.md${NC}"
+        echo -e "${YELLOW}  请启动/重新加载 Hammerspoon 以使用 GUI 界面${NC}"
     fi
 }
 
