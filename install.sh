@@ -16,8 +16,8 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo -e "${BLUE}======================================"
-echo "  Markdown to DOCX 安装程序"
-echo "======================================${NC}"
+echo -e "  Markdown to DOCX 安装程序"
+echo -e "======================================${NC}"
 echo ""
 
 # 检测操作系统
@@ -112,6 +112,109 @@ install_mermaid_cli() {
     fi
 }
 
+# 安装 PDF 引擎
+install_pdf_engine() {
+    echo -e "${BLUE}检查 PDF 转换引擎...${NC}"
+    
+    # 检查是否已安装 xelatex
+    if command_exists xelatex; then
+        echo -e "${GREEN}✓ XeLaTeX 已安装 ($(xelatex --version | head -n1))${NC}"
+        return 0
+    fi
+    
+    # 检查是否已安装 chromium (Pandoc 3.x 支持)
+    if command_exists chromium || command_exists chromium-browser || [ -d "/Applications/Chromium.app" ]; then
+        echo -e "${GREEN}✓ Chromium 已安装${NC}"
+        return 0
+    fi
+    
+    # 检查是否已安装 weasyprint
+    if command_exists weasyprint; then
+        echo -e "${GREEN}✓ WeasyPrint 已安装${NC}"
+        return 0
+    fi
+    
+    echo -e "${YELLOW}未检测到 PDF 转换引擎${NC}"
+    echo ""
+    echo -e "${BLUE}可选的 PDF 引擎:${NC}"
+    echo -e "  ${GREEN}1)${NC} Chromium (推荐, 约 200MB, 现代化渲染)"
+    echo -e "  ${GREEN}2)${NC} WeasyPrint (轻量级, 约 20MB, Python-based)"
+    echo -e "  ${GREEN}3)${NC} XeLaTeX (专业排版, 约 4GB, 安装慢)"
+    echo -e "  ${GREEN}4)${NC} 跳过 (稍后手动安装)"
+    echo ""
+    echo -e "${YELLOW}请选择 (1-4) [1]: ${NC}"
+    read -r choice
+    choice=${choice:-1}
+    
+    case $choice in
+        1)
+            echo -e "${YELLOW}→ 安装 Chromium...${NC}"
+            if [[ "$OS" == "macos" ]]; then
+                brew install --cask chromium
+            elif [[ "$OS" == "linux" ]]; then
+                if command_exists apt-get; then
+                    sudo apt-get update
+                    sudo apt-get install -y chromium-browser
+                elif command_exists yum; then
+                    sudo yum install -y chromium
+                else
+                    echo -e "${RED}✗ 无法自动安装 Chromium${NC}"
+                    echo -e "${YELLOW}  请手动安装 Chromium 浏览器${NC}"
+                fi
+            fi
+            ;;
+        2)
+            echo -e "${YELLOW}→ 安装 WeasyPrint...${NC}"
+            if [[ "$OS" == "macos" ]]; then
+                # macOS 使用 Homebrew 安装
+                brew install weasyprint
+            elif [[ "$OS" == "linux" ]]; then
+                # Linux 使用系统包管理器
+                if command_exists apt-get; then
+                    sudo apt-get update
+                    sudo apt-get install -y weasyprint
+                elif command_exists yum; then
+                    sudo yum install -y weasyprint
+                else
+                    # 使用 pip 用户安装
+                    if command_exists pip3; then
+                        pip3 install --user weasyprint
+                    elif command_exists pip; then
+                        pip install --user weasyprint
+                    else
+                        echo -e "${RED}✗ 无法安装 WeasyPrint${NC}"
+                    fi
+                fi
+            fi
+            ;;
+        3)
+            echo -e "${YELLOW}→ 安装 XeLaTeX (这可能需要几分钟)...${NC}"
+            if [[ "$OS" == "macos" ]]; then
+                brew install --cask mactex-no-gui
+            elif [[ "$OS" == "linux" ]]; then
+                if command_exists apt-get; then
+                    sudo apt-get update
+                    sudo apt-get install -y texlive-xetex texlive-fonts-recommended texlive-fonts-extra
+                elif command_exists yum; then
+                    sudo yum install -y texlive-xetex
+                else
+                    echo -e "${RED}✗ 无法自动安装 XeLaTeX${NC}"
+                fi
+            fi
+            ;;
+        4)
+            echo -e "${YELLOW}⊘ 跳过 PDF 引擎安装${NC}"
+            echo -e "${BLUE}  提示: 稍后可以手动安装:${NC}"
+            echo -e "    macOS: brew install --cask chromium"
+            echo -e "    Linux: sudo apt-get install chromium-browser"
+            echo -e "    Python: pip3 install weasyprint"
+            ;;
+        *)
+            echo -e "${YELLOW}⊘ 无效选择,跳过安装${NC}"
+            ;;
+    esac
+}
+
 # 创建全局命令链接
 install_global_cli() {
     echo -e "${YELLOW}→ 安装全局 CLI 命令...${NC}"
@@ -120,18 +223,44 @@ install_global_cli() {
     mkdir -p "$SCRIPT_DIR/bin"
     
     # 创建全局命令脚本
-    cat > "$SCRIPT_DIR/bin/md2docx" << 'EOF'
+    cat > "$SCRIPT_DIR/bin/mdconv" << 'EOF'
 #!/bin/bash
-# Markdown to DOCX 全局命令
+# mdconv - Markdown 多格式转换工具
+# 支持转换为 DOCX, PDF, HTML, PPTX, EPUB 等格式
 
 # 获取安装目录
 INSTALL_DIR="$(cd "$(dirname "$(dirname "$(readlink -f "$0" || echo "$0")")")" && pwd)"
 
-# 调用转换脚本
-"$INSTALL_DIR/scripts/convert.sh" "$@"
+# 检查是否有参数
+if [ $# -eq 0 ]; then
+    echo "用法: mdconv [选项] <输入文件>"
+    echo ""
+    echo "选项:"
+    echo "  -q, --quick          快速模式（跳过交互）"
+    echo "  -f, --format FORMAT  输出格式 (docx|pdf|html|pptx|epub)"
+    echo "  -h, --help           显示帮助信息"
+    echo ""
+    echo "示例:"
+    echo "  mdconv document.md                 # 交互式转换（默认）"
+    echo "  mdconv -q document.md              # 快速转换为 DOCX"
+    echo "  mdconv -q -f pdf document.md       # 快速转换为 PDF"
+    exit 1
+fi
+
+# 检查是否使用快速模式
+if [ "$1" = "-q" ] || [ "$1" = "--quick" ]; then
+    shift
+    "$INSTALL_DIR/scripts/convert.sh" "$@"
+else
+    # 默认使用交互式模式
+    "$INSTALL_DIR/scripts/convert_interactive.sh" "$@"
+fi
 EOF
 
-    chmod +x "$SCRIPT_DIR/bin/md2docx"
+    chmod +x "$SCRIPT_DIR/bin/mdconv"
+    
+    # 创建向后兼容的别名
+    ln -sf mdconv "$SCRIPT_DIR/bin/md2docx"
     
     # 添加到 PATH
     local shell_rc=""
@@ -142,9 +271,9 @@ EOF
     fi
     
     if [[ -n "$shell_rc" ]]; then
-        if ! grep -q "md2docx" "$shell_rc"; then
+        if ! grep -q "mdconv" "$shell_rc"; then
             echo "" >> "$shell_rc"
-            echo "# Markdown to DOCX CLI" >> "$shell_rc"
+            echo "# mdconv - Markdown 多格式转换工具" >> "$shell_rc"
             echo "export PATH=\"$SCRIPT_DIR/bin:\$PATH\"" >> "$shell_rc"
             echo -e "${GREEN}✓ 已添加到 $shell_rc${NC}"
             echo -e "${YELLOW}  请运行: source $shell_rc${NC}"
@@ -163,8 +292,8 @@ configure_hammerspoon() {
         fi
         
         # 复制配置文件到用户目录
-        cp "$SCRIPT_DIR/.md2docx.conf" "$HOME/.md2docx.conf"
-        echo -e "${GREEN}✓ 配置文件已复制到 ~/.md2docx.conf${NC}"
+        cp "$SCRIPT_DIR/.mdconv.conf" "$HOME/.mdconv.conf"
+        echo -e "${GREEN}✓ 配置文件已复制到 ~/.mdconv.conf${NC}"
         
         # 检查 Hammerspoon init.lua 是否存在
         local hammerspoon_init="$HOME/.hammerspoon/init.lua"
@@ -204,7 +333,7 @@ EOF
 
 安装脚本已自动完成以下配置:
 
-1. ✅ 复制配置文件到 ~/.md2docx.conf
+1. ✅ 复制配置文件到 ~/.mdconv.conf
 2. ✅ 更新 ~/.hammerspoon/init.lua
 3. ✅ 配置项目路径
 
@@ -231,7 +360,7 @@ EOF
 **解决**: 
 1. 打开 Hammerspoon Console
 2. 查看是否有错误信息
-3. 确认配置文件路径正确: \`cat ~/.md2docx.conf\`
+3. 确认配置文件路径正确: \`cat ~/.mdconv.conf\`
 
 ### 问题: 提示"请先运行 install.sh"
 **解决**:
@@ -244,7 +373,7 @@ cd $SCRIPT_DIR
 ### 问题: 转换失败
 **解决**:
 1. 检查依赖: \`./scripts/check_dependencies.sh\`
-2. 测试命令行: \`md2docx test.md\`
+2. 测试命令行: \`mdconv test.md\`
 3. 查看 Hammerspoon Console 日志
 
 ## 手动配置 (如果需要)
@@ -271,8 +400,8 @@ EOF
 create_config() {
     echo -e "${YELLOW}→ 创建配置文件...${NC}"
     
-    cat > "$SCRIPT_DIR/.md2docx.conf" << EOF
-# Markdown to DOCX 配置文件
+    cat > "$SCRIPT_DIR/.mdconv.conf" << EOF
+# mdconv 配置文件 - Markdown 多格式转换工具
 # 安装路径
 INSTALL_DIR="$SCRIPT_DIR"
 
@@ -291,7 +420,7 @@ DEFAULT_OUTPUT_DIR="."
 USE_CUSTOM_TEMPLATE="true"
 EOF
 
-    echo -e "${GREEN}✓ 配置文件已创建: .md2docx.conf${NC}"
+    echo -e "${GREEN}✓ 配置文件已创建: .mdconv.conf${NC}"
 }
 
 # 创建默认模板
@@ -305,31 +434,35 @@ main() {
     detect_os
     echo ""
     
-    echo -e "${BLUE}步骤 1/7: 检查包管理器${NC}"
+    echo -e "${BLUE}步骤 1/8: 检查包管理器${NC}"
     install_homebrew
     echo ""
     
-    echo -e "${BLUE}步骤 2/7: 安装 Pandoc${NC}"
+    echo -e "${BLUE}步骤 2/8: 安装 Pandoc${NC}"
     install_pandoc
     echo ""
     
-    echo -e "${BLUE}步骤 3/7: 安装 Node.js${NC}"
+    echo -e "${BLUE}步骤 3/8: 安装 Node.js${NC}"
     install_nodejs
     echo ""
     
-    echo -e "${BLUE}步骤 4/7: 安装 mermaid-cli${NC}"
+    echo -e "${BLUE}步骤 4/8: 安装 mermaid-cli${NC}"
     install_mermaid_cli
     echo ""
     
-    echo -e "${BLUE}步骤 5/7: 安装全局 CLI${NC}"
+    echo -e "${BLUE}步骤 5/8: 安装 PDF 引擎${NC}"
+    install_pdf_engine
+    echo ""
+    
+    echo -e "${BLUE}步骤 6/8: 安装全局 CLI${NC}"
     install_global_cli
     echo ""
     
-    echo -e "${BLUE}步骤 6/7: 创建配置文件${NC}"
+    echo -e "${BLUE}步骤 7/8: 创建配置文件${NC}"
     create_config
     echo ""
     
-    echo -e "${BLUE}步骤 7/7: 创建默认模板${NC}"
+    echo -e "${BLUE}步骤 8/8: 创建默认模板${NC}"
     create_default_template
     echo ""
     
@@ -339,14 +472,14 @@ main() {
     fi
     
     echo -e "${GREEN}======================================"
-    echo "  ✓ 安装完成!"
-    echo "======================================${NC}"
+    echo -e "  ✓ 安装完成!"
+    echo -e "======================================${NC}"
     echo ""
     echo -e "${BLUE}使用方法:${NC}"
     echo ""
     echo -e "  ${GREEN}命令行:${NC}"
-    echo -e "    md2docx document.md"
-    echo -e "    md2docx input.md output.docx"
+    echo -e "    mdconv document.md"
+    echo -e "    mdconv input.md output.docx"
     echo ""
     echo -e "  ${GREEN}批量转换:${NC}"
     echo -e "    $SCRIPT_DIR/scripts/batch_convert.sh *.md"
@@ -357,7 +490,7 @@ main() {
         echo -e "    配置: 查看 $SCRIPT_DIR/hammerspoon/README.md"
         echo ""
     fi
-    echo -e "${YELLOW}注意: 请重新加载 shell 配置或重启终端以使用 md2docx 命令${NC}"
+    echo -e "${YELLOW}注意: 请重新加载 shell 配置或重启终端以使用 mdconv 命令${NC}"
     echo ""
 }
 

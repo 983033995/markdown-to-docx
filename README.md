@@ -1,16 +1,23 @@
-# Markdown to DOCX 转换器
+# mdconv - Markdown 多格式转换工具
 
-一个功能强大的 Markdown 到 DOCX 转换工具,支持 Mermaid 图表、LaTeX 数学公式、代码高亮、表格等丰富元素。
+一个功能强大的 Markdown 多格式转换工具，支持转换为 DOCX、PDF、HTML、PPTX、EPUB 等多种格式。内置 Mermaid 图表、LaTeX 数学公式、代码高亮等丰富功能。
 
 ## ✨ 特性
 
-- ✅ **Mermaid 图表支持**: 流程图、时序图、甘特图等自动转换为高质量 SVG
-- ✅ **LaTeX 数学公式**: 转换为 Office MathML 格式
-- ✅ **代码语法高亮**: 支持多种编程语言的 GitHub 风格高亮
-- ✅ **完整 Markdown 支持**: 表格、列表、引用、图片、脚注等
-- ✅ **批量转换**: 支持同时转换多个文件
-- ✅ **命令行 + GUI**: 既可以命令行使用,也可以通过 Hammerspoon 图形界面操作
-- ✅ **自定义样式**: 支持自定义 Word 模板
+### 多格式支持
+- 📝 **DOCX**: Microsoft Word 文档
+- 📝 **PDF**: 支持多种 PDF 引擎（WeasyPrint、Chromium、XeLaTeX）
+- 🌐 **HTML**: 响应式网页
+- 📊 **PPTX**: PowerPoint 演示文稿
+- 📚 **EPUB**: 电子书格式
+
+### 丰富功能
+- ✅ **Mermaid 图表**: 流程图、时序图、甘特图等自动转换
+- ✅ **LaTeX 数学公式**: 专业数学排版
+- ✅ **代码高亮**: 支持 100+ 编程语言
+- ✅ **批量转换**: 同时处理多个文件
+- ✅ **交互式界面**: 友好的菜单引导
+- ✅ **自定义样式**: 支持模板定制
 
 ## 📋 系统要求
 
@@ -72,17 +79,23 @@ cd markdown-to-docx
 安装后可以在任何目录使用:
 
 ```bash
-# 单文件转换
-md2docx document.md
-# 输出: document.docx (在同目录)
+# 交互式转换（默认，有菜单引导）
+mdconv document.md
 
-# 指定输出路径
-md2docx input.md output.docx
+# 快速模式（跳过交互，直接转换为 DOCX）
+mdconv -q document.md
+
+# 快速转换为其他格式
+mdconv -q -f pdf document.md      # PDF
+mdconv -q -f html document.md     # HTML
+mdconv -q -f pptx document.md     # PowerPoint
+mdconv -q -f epub document.md     # 电子书
 
 # 批量转换
-md2docx-batch doc1.md doc2.md doc3.md
-# 或使用通配符
-md2docx-batch *.md
+./scripts/batch_convert.sh *.md
+
+# 查看帮助
+mdconv --help
 ```
 
 #### 方式二: 直接调用脚本

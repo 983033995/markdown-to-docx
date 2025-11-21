@@ -1,0 +1,31 @@
+#!/bin/bash
+# mdconv - Markdown 多格式转换工具
+# 支持转换为 DOCX, PDF, HTML, PPTX, EPUB 等格式
+
+# 获取安装目录
+INSTALL_DIR="$(cd "$(dirname "$(dirname "$(readlink -f "$0" || echo "$0")")")" && pwd)"
+
+# 检查是否有参数
+if [ $# -eq 0 ]; then
+    echo "用法: mdconv [选项] <输入文件>"
+    echo ""
+    echo "选项:"
+    echo "  -q, --quick          快速模式（跳过交互）"
+    echo "  -f, --format FORMAT  输出格式 (docx|pdf|html|pptx|epub)"
+    echo "  -h, --help           显示帮助信息"
+    echo ""
+    echo "示例:"
+    echo "  mdconv document.md                 # 交互式转换（默认）"
+    echo "  mdconv -q document.md              # 快速转换为 DOCX"
+    echo "  mdconv -q -f pdf document.md       # 快速转换为 PDF"
+    exit 1
+fi
+
+# 检查是否使用快速模式
+if [ "$1" = "-q" ] || [ "$1" = "--quick" ]; then
+    shift
+    "$INSTALL_DIR/scripts/convert.sh" "$@"
+else
+    # 默认使用交互式模式
+    "$INSTALL_DIR/scripts/convert_interactive.sh" "$@"
+fi

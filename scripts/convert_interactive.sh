@@ -19,8 +19,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # 配置文件路径
-CONFIG_FILE="$HOME/.mdconvert.yaml"
-LAST_CONFIG_FILE="$HOME/.mdconvert_last.yaml"
+CONFIG_FILE="$HOME/.mdconv.yaml"
+LAST_CONFIG_FILE="$HOME/.mdconv_last.yaml"
 
 # 默认配置
 INPUT_FILE=""
@@ -31,6 +31,7 @@ NUMBER_SECTIONS="n"
 PDF_PRESET="standard"
 HTML_THEME="github"
 PPT_STYLE="business"
+DOCX_TEMPLATE="reference"
 
 # 获取预设配置 (兼容 bash 3.2)
 get_preset() {
@@ -267,6 +268,35 @@ step_format_specific() {
                 *) HTML_THEME="github" ;;
             esac
             ;;
+        docx)
+            echo -e "选择 Word 模板:"
+            echo -e "  ${GREEN}[1]${NC} 默认模板 (通用)"
+            echo -e "  ${GREEN}[2]${NC} 学术论文 (宋体，严谨，标题层级清晰)"
+            echo -e "  ${GREEN}[3]${NC} 商务报告 (微软雅黑，现代)"
+            echo -e "  ${GREEN}[4]${NC} 技术文档 (等线，清晰)"
+            echo -e "  ${GREEN}[5]${NC} 简洁现代 (苹方，简约)"
+            echo ""
+            
+            local default_choice="1"
+            case $DOCX_TEMPLATE in
+                reference) default_choice="1" ;;
+                academic) default_choice="2" ;;
+                business) default_choice="3" ;;
+                technical) default_choice="4" ;;
+                modern) default_choice="5" ;;
+            esac
+            
+            read_input "请选择 (1-5)" "$default_choice" choice
+            
+            case $choice in
+                1) DOCX_TEMPLATE="reference" ;;
+                2) DOCX_TEMPLATE="academic" ;;
+                3) DOCX_TEMPLATE="business" ;;
+                4) DOCX_TEMPLATE="technical" ;;
+                5) DOCX_TEMPLATE="modern" ;;
+                *) DOCX_TEMPLATE="reference" ;;
+            esac
+            ;;
         pptx)
             echo -e "选择 PPT 风格:"
             echo -e "  ${GREEN}[1]${NC} 商务风格"
@@ -296,11 +326,14 @@ show_summary() {
     echo -e "${BOLD}配置摘要${NC}"
     echo ""
     echo -e "  输入文件:   ${CYAN}$INPUT_FILE${NC}"
-    echo -e "  输出格式:   ${GREEN}${OUTPUT_FORMAT^^}${NC}"
+    echo -e "  输出格式:   ${GREEN}$(echo "$OUTPUT_FORMAT" | tr '[:lower:]' '[:upper:]')${NC}"
     echo -e "  生成目录:   ${YELLOW}$TOC_ENABLED${NC}"
     echo -e "  章节编号:   ${YELLOW}$NUMBER_SECTIONS${NC}"
     
     case $OUTPUT_FORMAT in
+        docx)
+            echo -e "  Word 模板:  ${YELLOW}$DOCX_TEMPLATE${NC}"
+            ;;
         pdf)
             echo -e "  PDF 预设:   ${YELLOW}$PDF_PRESET${NC}"
             ;;
@@ -337,7 +370,24 @@ build_convert_command() {
     fi
     
     case $OUTPUT_FORMAT in
+        docx)
+            # 添加 Word 模板参数
+            cmd="$cmd --docx-template $DOCX_TEMPLATE"
+            ;;
         pdf)
+            # 检测可用的 PDF 引擎
+            local pdf_engine
+            if [ -f "$SCRIPT_DIR/detect_pdf_engine.sh" ]; then
+                pdf_engine=$("$SCRIPT_DIR/detect_pdf_engine.sh")
+                if [ $? -eq 0 ] && [ -n "$pdf_engine" ] && [ "$pdf_engine" != "none" ]; then
+                    cmd="$cmd --pdf-engine $pdf_engine"
+                else
+                    echo -e "${RED}错误: 未找到可用的 PDF 引擎${NC}" >&2
+                    echo -e "${YELLOW}请运行 ./install.sh 安装 PDF 引擎${NC}" >&2
+                    return 1
+                fi
+            fi
+            
             case $PDF_PRESET in
                 academic)
                     cmd="$cmd --margin-top 2.5cm --margin-bottom 2.5cm"
@@ -437,7 +487,7 @@ Markdown 交互式转换工具
     $0 --preset academic paper.md
     
     # 使用配置文件
-    $0 --config .mdconvert.yaml document.md
+    $0 --config .mdconv.yaml document.md
 
 EOF
 }

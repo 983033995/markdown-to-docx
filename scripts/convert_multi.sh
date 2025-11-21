@@ -165,6 +165,10 @@ parse_args() {
                 HTML_SELF_CONTAINED=true
                 shift
                 ;;
+            --docx-template)
+                DOCX_TEMPLATE="$2"
+                shift 2
+                ;;
             --html-css)
                 HTML_CSS_THEME="$2"
                 shift 2
@@ -241,20 +245,65 @@ build_pandoc_command() {
     case $OUTPUT_FORMAT in
         docx)
             cmd="$cmd --mathml"
-            if [ "$USE_TEMPLATE" = true ] && [ -f "$TEMPLATE_DIR/reference.docx" ]; then
-                cmd="$cmd --reference-doc=\"$TEMPLATE_DIR/reference.docx\""
+            if [ "$USE_TEMPLATE" = true ]; then
+                # 使用指定的模板，默认为 reference
+                local template_name="${DOCX_TEMPLATE:-reference}"
+                local template_file="$TEMPLATE_DIR/${template_name}.docx"
+                
+                if [ -f "$template_file" ]; then
+                    cmd="$cmd --reference-doc=\"$template_file\""
+                else
+                    echo "警告: 模板文件不存在: $template_file" >&2
+                    echo "使用默认模板" >&2
+                    if [ -f "$TEMPLATE_DIR/reference.docx" ]; then
+                        cmd="$cmd --reference-doc=\"$TEMPLATE_DIR/reference.docx\""
+                    fi
+                fi
             fi
             ;;
         pdf)
-            cmd="$cmd --pdf-engine=$PDF_ENGINE"
-            cmd="$cmd -V geometry:top=$PDF_MARGIN_TOP"
-            cmd="$cmd -V geometry:bottom=$PDF_MARGIN_BOTTOM"
-            cmd="$cmd -V geometry:left=$PDF_MARGIN_LEFT"
-            cmd="$cmd -V geometry:right=$PDF_MARGIN_RIGHT"
-            cmd="$cmd -V fontsize=$PDF_FONTSIZE"
-            cmd="$cmd -V papersize=$PDF_PAPERSIZE"
-            cmd="$cmd -V CJKmainfont='PingFang SC'"
-            cmd="$cmd -V mainfont='Times New Roman'"
+            # 根据 PDF 引擎类型使用不同的选项
+            case $PDF_ENGINE in
+                xelatex|pdflatex|lualatex)
+                    # LaTeX 引擎
+                    cmd="$cmd --pdf-engine=$PDF_ENGINE"
+                    cmd="$cmd -V geometry:top=$PDF_MARGIN_TOP"
+                    cmd="$cmd -V geometry:bottom=$PDF_MARGIN_BOTTOM"
+                    cmd="$cmd -V geometry:left=$PDF_MARGIN_LEFT"
+                    cmd="$cmd -V geometry:right=$PDF_MARGIN_RIGHT"
+                    cmd="$cmd -V fontsize=$PDF_FONTSIZE"
+                    cmd="$cmd -V papersize=$PDF_PAPERSIZE"
+                    
+                    # XeLaTeX 和 LuaLaTeX 支持中文字体
+                    if [ "$PDF_ENGINE" = "xelatex" ] || [ "$PDF_ENGINE" = "lualatex" ]; then
+                        cmd="$cmd -V CJKmainfont='PingFang SC'"
+                        cmd="$cmd -V mainfont='Times New Roman'"
+                    fi
+                    ;;
+                html5)
+                    # Chromium 引擎 (Pandoc 3.x 原生支持)
+                    cmd="$cmd --pdf-engine=html5"
+                    # html5 引擎通过 CSS 控制样式
+                    cmd="$cmd --css=<(echo 'body { margin: $PDF_MARGIN_TOP $PDF_MARGIN_RIGHT $PDF_MARGIN_BOTTOM $PDF_MARGIN_LEFT; }')"
+                    ;;
+                weasyprint)
+                    # WeasyPrint 引擎
+                    cmd="$cmd --pdf-engine=weasyprint"
+                    # WeasyPrint 通过 CSS 控制样式
+                    ;;
+                *)
+                    # 默认使用 xelatex
+                    cmd="$cmd --pdf-engine=xelatex"
+                    cmd="$cmd -V geometry:top=$PDF_MARGIN_TOP"
+                    cmd="$cmd -V geometry:bottom=$PDF_MARGIN_BOTTOM"
+                    cmd="$cmd -V geometry:left=$PDF_MARGIN_LEFT"
+                    cmd="$cmd -V geometry:right=$PDF_MARGIN_RIGHT"
+                    cmd="$cmd -V fontsize=$PDF_FONTSIZE"
+                    cmd="$cmd -V papersize=$PDF_PAPERSIZE"
+                    cmd="$cmd -V CJKmainfont='PingFang SC'"
+                    cmd="$cmd -V mainfont='Times New Roman'"
+                    ;;
+            esac
             ;;
         html)
             if [ "$HTML_SELF_CONTAINED" = true ]; then
@@ -269,7 +318,18 @@ build_pandoc_command() {
             cmd="$cmd --mathjax"
             ;;
         pptx)
-            cmd="$cmd --slide-level=$PPT_SLIDE_LEVEL"
+            # 优化幻灯片级别：使用 2 级标题作为新幻灯片，避免内容过多
+            cmd="$cmd --slide-level=2"
+            
+            # 添加变量设置，优化字体和间距
+            cmd="$cmd -V fontsize=16pt"
+            cmd="$cmd -V monofont='Menlo'"
+            
+            # 添加 PPT 优化过滤器
+            if [ -f "$FILTER_DIR/ppt-optimize.lua" ]; then
+                cmd="$cmd --lua-filter=\"$FILTER_DIR/ppt-optimize.lua\""
+            fi
+            
             if [ "$PPT_INCREMENTAL" = true ]; then
                 cmd="$cmd --incremental"
             fi
