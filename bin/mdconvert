@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Markdown 多格式转换 CLI 工具
+# 自动检测安装路径
+
+# 获取脚本真实路径
+get_install_dir() {
+    local source="${BASH_SOURCE[0]}"
+    while [ -h "$source" ]; do
+        local dir="$(cd -P "$(dirname "$source")" && pwd)"
+        source="$(readlink "$source")"
+        [[ $source != /* ]] && source="$dir/$source"
+    done
+    local dir="$(cd -P "$(dirname "$source")" && pwd)"
+    echo "$(dirname "$dir")"
+}
+
+INSTALL_DIR="$(get_install_dir)"
+CONVERT_SCRIPT="$INSTALL_DIR/scripts/convert_multi.sh"
+
+# 检查转换脚本是否存在
+if [ ! -f "$CONVERT_SCRIPT" ]; then
+    echo "错误: 未找到转换脚本"
+    echo "期望路径: $CONVERT_SCRIPT"
+    exit 1
+fi
+
+# 调用转换脚本
+exec "$CONVERT_SCRIPT" "$@"
