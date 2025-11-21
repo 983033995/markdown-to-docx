@@ -3,62 +3,30 @@
 
 -- 自动检测项目路径
 local function detectProjectPath()
-    -- 方法1: 从用户 home 目录的配置文件读取
+    -- 方法1: 从配置文件读取
     local configFile = os.getenv("HOME") .. "/.md2docx.conf"
     local f = io.open(configFile, "r")
     if f then
         for line in f:lines() do
             local path = line:match('INSTALL_DIR="(.-)"')
-            if path and path ~= "" then
-                -- 验证路径是否有效
-                local checkFile = path .. "/scripts/convert.sh"
-                local cf = io.open(checkFile, "r")
-                if cf then
-                    cf:close()
-                    f:close()
-                    return path
-                end
+            if path then
+                f:close()
+                return path
             end
         end
         f:close()
     end
     
-    -- 方法2: 从项目目录的配置文件读取
-    local projectConfigFile = "/Volumes/13759427003/工具/markdown-to-docx/.md2docx.conf"
-    f = io.open(projectConfigFile, "r")
-    if f then
-        for line in f:lines() do
-            local path = line:match('INSTALL_DIR="(.-)"')
-            if path and path ~= "" then
-                local checkFile = path .. "/scripts/convert.sh"
-                local cf = io.open(checkFile, "r")
-                if cf then
-                    cf:close()
-                    f:close()
-                    return path
-                end
-            end
-        end
-        f:close()
+    -- 方法2: 使用默认路径
+    local defaultPath = os.getenv("HOME") .. "/markdown-to-docx"
+    local checkFile = defaultPath .. "/scripts/convert.sh"
+    local cf = io.open(checkFile, "r")
+    if cf then
+        cf:close()
+        return defaultPath
     end
     
-    -- 方法3: 尝试常见安装位置
-    local possiblePaths = {
-        "/Volumes/13759427003/工具/markdown-to-docx",
-        os.getenv("HOME") .. "/markdown-to-docx",
-        os.getenv("HOME") .. "/工具/markdown-to-docx"
-    }
-    
-    for _, path in ipairs(possiblePaths) do
-        local checkFile = path .. "/scripts/convert.sh"
-        local cf = io.open(checkFile, "r")
-        if cf then
-            cf:close()
-            return path
-        end
-    end
-    
-    -- 方法4: 提示用户
+    -- 方法3: 提示用户
     hs.alert.show("请先运行 install.sh 安装 Markdown to DOCX")
     return nil
 end

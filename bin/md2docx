@@ -1,29 +1,8 @@
 #!/bin/bash
+# Markdown to DOCX 全局命令
 
-# Markdown to DOCX 全局 CLI 工具
-# 自动检测安装路径
-
-# 获取脚本真实路径
-get_install_dir() {
-    local source="${BASH_SOURCE[0]}"
-    while [ -h "$source" ]; do
-        local dir="$(cd -P "$(dirname "$source")" && pwd)"
-        source="$(readlink "$source")"
-        [[ $source != /* ]] && source="$dir/$source"
-    done
-    local dir="$(cd -P "$(dirname "$source")" && pwd)"
-    echo "$(dirname "$dir")"
-}
-
-INSTALL_DIR="$(get_install_dir)"
-CONVERT_SCRIPT="$INSTALL_DIR/scripts/convert.sh"
-
-# 检查转换脚本是否存在
-if [ ! -f "$CONVERT_SCRIPT" ]; then
-    echo "错误: 未找到转换脚本"
-    echo "期望路径: $CONVERT_SCRIPT"
-    exit 1
-fi
+# 获取安装目录
+INSTALL_DIR="$(cd "$(dirname "$(dirname "$(readlink -f "$0" || echo "$0")")")" && pwd)"
 
 # 调用转换脚本
-exec "$CONVERT_SCRIPT" "$@"
+"$INSTALL_DIR/scripts/convert.sh" "$@"
