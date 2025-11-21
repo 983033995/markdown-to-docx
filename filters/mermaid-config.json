@@ -1,0 +1,24 @@
+{
+  "theme": "default",
+  "themeVariables": {
+    "fontSize": "14px"
+  },
+  "flowchart": {
+    "useMaxWidth": true,
+    "htmlLabels": true,
+    "curve": "basis",
+    "padding": 15,
+    "nodeSpacing": 50,
+    "rankSpacing": 50,
+    "wrappingWidth": 200
+  },
+  "sequence": {
+    "useMaxWidth": true,
+    "wrap": true,
+    "wrapPadding": 10
+  },
+  "gantt": {
+    "useMaxWidth": true,
+    "fontSize": 12
+  }
+}
