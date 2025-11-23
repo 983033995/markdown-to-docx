@@ -10,6 +10,27 @@ local mermaid_counter = 0
 -- 获取输出格式
 local output_format = FORMAT or "docx"
 
+-- 根据输出格式获取配置文件路径
+local function get_config_files()
+    local script_dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
+    local format_suffix = ""
+    
+    -- 根据输出格式确定配置文件后缀
+    if output_format == "html" or output_format == "html5" then
+        format_suffix = "-html"
+    elseif output_format == "latex" or output_format == "pdf" then
+        format_suffix = "-pdf"
+    else
+        format_suffix = "-docx"
+    end
+    
+    return {
+        config = script_dir .. "mermaid-config" .. format_suffix .. ".json",
+        css = script_dir .. "mermaid" .. format_suffix .. ".css",
+        puppeteer = script_dir .. "puppeteer-config.json"
+    }
+end
+
 -- 获取临时目录
 local function get_temp_dir()
     local temp = os.getenv("TMPDIR") or "/tmp"
@@ -50,17 +71,25 @@ local function mermaid_to_svg_content(code)
     file:write(code)
     file:close()
     
-    -- 获取配置文件路径
-    local script_dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
-    local config_file = script_dir .. "mermaid-config.json"
+    -- 获取配置文件路径（根据输出格式自动选择）
+    local config_files = get_config_files()
+    local config_file = config_files.config
+    local puppeteer_config = config_files.puppeteer
+    local css_file = config_files.css
     
     -- 使用 mermaid-cli 转换为 SVG
     -- 不设置宽高限制，保持 SVG 的矢量特性
+    local mmdc_path = "/Users/zhangheteng/.nvm/versions/node/v24.11.1/bin/mmdc"
+    local node_path = "/Users/zhangheteng/.nvm/versions/node/v24.11.1/bin"
     local command = string.format(
-        "mmdc -i '%s' -o '%s' -b transparent -t default -c '%s' 2>&1",
+        "export PATH='%s:$PATH' && %s -i '%s' -o '%s' -b transparent -t default -c '%s' -p '%s' -C '%s' 2>&1",
+        node_path,
+        mmdc_path,
         mmd_file,
         svg_file,
-        config_file
+        config_file,
+        puppeteer_config,
+        css_file
     )
     
     local success, output = execute_command(command)
@@ -94,6 +123,52 @@ local function mermaid_to_svg_content(code)
     return svg_content
 end
 
+-- 分析 Mermaid 代码中的文本复杂度
+local function analyze_text_complexity(code)
+    local max_text_length = 0
+    local node_count = 0
+    local total_text_length = 0
+    
+    -- 匹配节点定义: A[文本], B(文本), C{文本}, D((文本)) 等
+    for text in code:gmatch("%[([^%]]+)%]") do
+        node_count = node_count + 1
+        local len = #text
+        total_text_length = total_text_length + len
+        if len > max_text_length then
+            max_text_length = len
+        end
+    end
+    
+    for text in code:gmatch("%(([^%)]+)%)") do
+        if not text:match("^%s*$") then  -- 排除空括号
+            node_count = node_count + 1
+            local len = #text
+            total_text_length = total_text_length + len
+            if len > max_text_length then
+                max_text_length = len
+            end
+        end
+    end
+    
+    for text in code:gmatch("{([^}]+)}") do
+        node_count = node_count + 1
+        local len = #text
+        total_text_length = total_text_length + len
+        if len > max_text_length then
+            max_text_length = len
+        end
+    end
+    
+    local avg_text_length = node_count > 0 and (total_text_length / node_count) or 0
+    
+    return {
+        max_length = max_text_length,
+        node_count = node_count,
+        avg_length = avg_text_length,
+        has_long_text = max_text_length > 20
+    }
+end
+
 -- 将 Mermaid 代码转换为 PNG (更好的 Word/PDF 兼容性)
 local function mermaid_to_png(code)
     -- 创建临时文件
@@ -109,10 +184,14 @@ local function mermaid_to_png(code)
     file:write(code)
     file:close()
     
-    -- 检测图表类型,设置合适的宽度和高度
+    -- 分析文本复杂度
+    local complexity = analyze_text_complexity(code)
+    
+    -- 基础尺寸
     local width = 1200
     local height = 800
     
+    -- 检测图表类型,设置合适的宽度和高度
     -- 检测横向图表
     if code:match("^%s*gantt") or code:match("^%s*sequenceDiagram") then
         -- 甘特图和时序图通常是横向的,需要更大宽度
@@ -130,21 +209,61 @@ local function mermaid_to_png(code)
         height = 2000  -- 大幅增加高度
     end
     
-    -- 获取配置文件路径
-    local script_dir = debug.getinfo(1, "S").source:sub(2):match("(.*/)")
-    local config_file = script_dir .. "mermaid-config.json"
+    -- 动态调整画布尺寸
+    -- 1. 根据最长文本调整
+    if complexity.has_long_text then
+        local text_factor = 1 + math.min((complexity.max_length - 20) / 40, 0.5)
+        width = math.floor(width * text_factor)
+        io.stderr:write(string.format("检测到长文本(最长%d字符),宽度调整系数: %.2f\n", 
+            complexity.max_length, text_factor))
+    end
+    
+    -- 2. 根据节点数量调整
+    if complexity.node_count > 8 then
+        local node_factor = 1 + math.min((complexity.node_count - 8) / 25, 0.4)
+        width = math.floor(width * node_factor)
+        height = math.floor(height * node_factor)
+        io.stderr:write(string.format("检测到较多节点(%d个),尺寸调整系数: %.2f\n", 
+            complexity.node_count, node_factor))
+    end
+    
+    -- 3. 限制最大尺寸(避免文件过大)
+    local max_width = 3200
+    local max_height = 2800
+    if width > max_width then
+        width = max_width
+        io.stderr:write("宽度达到上限,限制为 " .. max_width .. "\n")
+    end
+    if height > max_height then
+        height = max_height
+        io.stderr:write("高度达到上限,限制为 " .. max_height .. "\n")
+    end
+    
+    io.stderr:write(string.format("最终画布尺寸: %dx%d\n", width, height))
+    
+    -- 获取配置文件路径（根据输出格式自动选择）
+    local config_files = get_config_files()
+    local config_file = config_files.config
+    local puppeteer_config = config_files.puppeteer
+    local css_file = config_files.css
     
     -- 使用 mermaid-cli 转换为 PNG
     -- -s 2: 2倍分辨率(平衡质量和文件大小)
     -- -w/-H: 设置画布大小
     -- -c: 使用配置文件
+    local mmdc_path = "/Users/zhangheteng/.nvm/versions/node/v24.11.1/bin/mmdc"
+    local node_path = "/Users/zhangheteng/.nvm/versions/node/v24.11.1/bin"
     local command = string.format(
-        "mmdc -i '%s' -o '%s' -b transparent -t default -s 2 -w %d -H %d -c '%s' 2>&1",
+        "export PATH='%s:$PATH' && %s -i '%s' -o '%s' -b transparent -t default -s 2 -w %d -H %d -c '%s' -p '%s' -C '%s' 2>&1",
+        node_path,
+        mmdc_path,
         mmd_file,
         png_file,
         width,
         height,
-        config_file
+        config_file,
+        puppeteer_config,
+        css_file
     )
     
     local success, output = execute_command(command)
@@ -173,6 +292,7 @@ function CodeBlock(block)
     -- 只处理 mermaid 类型的代码块
     if block.classes[1] == "mermaid" then
         io.stderr:write("处理 Mermaid 图表...\n")
+        io.stderr:write("当前输出格式: " .. output_format .. "\n")
         
         -- 根据输出格式选择 SVG 或 PNG
         if output_format == "html" or output_format == "html5" then
@@ -188,6 +308,56 @@ function CodeBlock(block)
             else
                 -- 转换失败,保留原始代码块
                 io.stderr:write("Mermaid 转换失败,保留原始代码块\n")
+                return block
+            end
+        elseif output_format == "latex" or output_format == "pdf" then
+            -- PDF 格式：使用 SVG 文件（保留文字）
+            local mmd_file = get_temp_filename("mmd")
+            local svg_file = get_temp_filename("svg")
+            
+            -- 写入 Mermaid 代码
+            local file = io.open(mmd_file, "w")
+            if not file then
+                io.stderr:write("错误: 无法创建临时文件 " .. mmd_file .. "\n")
+                return block
+            end
+            file:write(block.text)
+            file:close()
+            
+            -- 获取配置文件（根据输出格式自动选择）
+            local config_files = get_config_files()
+            local config_file = config_files.config
+            local puppeteer_config = config_files.puppeteer
+            local css_file = config_files.css
+            
+            -- 生成 SVG
+            local mmdc_path = "/Users/zhangheteng/.nvm/versions/node/v24.11.1/bin/mmdc"
+            local node_path = "/Users/zhangheteng/.nvm/versions/node/v24.11.1/bin"
+            local command = string.format(
+                "export PATH='%s:$PATH' && %s -i '%s' -o '%s' -b transparent -t default -c '%s' -p '%s' -C '%s' 2>&1",
+                node_path,
+                mmdc_path,
+                mmd_file,
+                svg_file,
+                config_file,
+                puppeteer_config,
+                css_file
+            )
+            
+            local success, output = execute_command(command)
+            os.remove(mmd_file)
+            
+            if success then
+                io.stderr:write("成功生成 SVG: " .. svg_file .. "\n")
+                io.stderr:write("PDF 使用 SVG 格式以保留文字\n")
+                
+                -- 返回图片元素
+                local img = pandoc.Image({}, svg_file, "", {})
+                img.attributes.width = "6.5in"
+                
+                return pandoc.Para({img})
+            else
+                io.stderr:write("Mermaid 转换失败: " .. output .. "\n")
                 return block
             end
         else

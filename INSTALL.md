@@ -5,7 +5,7 @@
 ### 1. 检查并安装依赖
 
 ```bash
-cd /Volumes/13759427003/工具/markdown-to-docx
+cd ~/markdown-to-docx  # 或您的项目路径
 ./scripts/check_dependencies.sh
 ```
 
@@ -25,7 +25,7 @@ cd /Volumes/13759427003/工具/markdown-to-docx
 
 ```lua
 -- 加载 Markdown to DOCX 转换器
-dofile("/Volumes/13759427003/工具/markdown-to-docx/hammerspoon/init.lua")
+dofile(os.getenv("HOME") .. "/markdown-to-docx/hammerspoon/init.lua")
 ```
 
 #### 方法二: 使用符号链接
@@ -34,8 +34,8 @@ dofile("/Volumes/13759427003/工具/markdown-to-docx/hammerspoon/init.lua")
 # 创建 Hammerspoon 配置目录
 mkdir -p ~/.hammerspoon
 
-# 创建符号链接
-ln -s /Volumes/13759427003/工具/markdown-to-docx/hammerspoon/init.lua \
+# 创建符号链接（请替换为您的实际项目路径）
+ln -s ~/markdown-to-docx/hammerspoon/init.lua \
       ~/.hammerspoon/markdown-to-docx.lua
 
 # 在主配置中加载
@@ -171,7 +171,7 @@ chmod +x scripts/*.sh
 
 ```bash
 # 删除项目目录
-rm -rf /Volumes/13759427003/工具/markdown-to-docx
+rm -rf ~/markdown-to-docx  # 或您的项目路径
 
 # 移除 Hammerspoon 配置
 # 编辑 ~/.hammerspoon/init.lua,删除相关行

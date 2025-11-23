@@ -1,0 +1,55 @@
+/* PDF 输出优化配置 - 适用于打印和 PDF */
+
+/* 基础字体设置 - 确保打印清晰 */
+body, svg, text, tspan, .node, .edgeLabel, .label, .cluster-label {
+    font-family: "PingFang SC", "Heiti SC", "Microsoft YaHei", sans-serif !important;
+    font-size: 13px !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 节点样式 - 适合打印 */
+.node rect, .node circle, .node polygon, .node path {
+    stroke-width: 1.5px;
+}
+
+/* 连线样式 - 清晰可见 */
+.edgePath .path {
+    stroke-width: 1.5px;
+}
+
+/* 文字颜色 - 高对比度 */
+.label, .node text, .edgeLabel {
+    fill: #000 !important;
+    color: #000 !important;
+}
+
+/* 文本换行和显示 */
+.nodeLabel, .edgeLabel {
+    white-space: normal !important;
+    word-break: keep-all !important;
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
+    line-height: 1.4 !important;
+}
+
+/* 节点内边距 */
+.node rect, .node circle, .node polygon {
+    padding: 12px !important;
+}
+
+/* 长文本优化 */
+foreignObject {
+    overflow: visible !important;
+}
+
+.label-container {
+    padding: 9px 12px !important;
+}
+
+/* 打印优化 */
+@media print {
+    svg {
+        page-break-inside: avoid;
+    }
+}

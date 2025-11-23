@@ -2,6 +2,7 @@
 
 # Markdown 多格式转换脚本
 # 支持: DOCX, PDF, HTML, PPTX, EPUB
+# 支持批量转换
 
 set -e
 
@@ -20,6 +21,7 @@ TEMPLATE_DIR="$PROJECT_DIR/templates"
 
 # 默认配置
 OUTPUT_FORMAT="docx"
+INPUT_FORMAT="markdown"  # 默认输入格式
 USE_TEMPLATE=true
 HIGHLIGHT_STYLE="github"
 MATH_FORMAT="mathml"
@@ -46,24 +48,28 @@ HTML_TEMPLATE=""
 PPT_SLIDE_LEVEL=2
 PPT_INCREMENTAL=false
 
+# 输入文件列表
+INPUT_FILES=()
+
 # 显示帮助信息
 show_help() {
     cat << EOF
-Markdown 多格式转换工具
+Markdown 多格式转换工具 (批量版)
 
 用法:
-    $0 [选项] <输入文件> [输出文件]
+    $0 [选项] <输入文件1> [输入文件2] ...
 
 支持的格式:
+    markdown - Markdown 文档
     docx    - Microsoft Word 文档 (默认)
     pdf     - PDF 文档
     html    - HTML 网页
+    txt     - 纯文本
     pptx    - PowerPoint 演示文稿
     epub    - 电子书
 
 选项:
-    -f, --format FORMAT     输出格式 (docx|pdf|html|pptx|epub)
-    -o, --output FILE       输出文件路径
+    -f, --format FORMAT     输出格式 (markdown|docx|pdf|html|txt|pptx|epub)
     --no-template           不使用自定义模板
     --toc                   生成目录
     --toc-depth N           目录深度 (默认: 3)
@@ -90,18 +96,11 @@ Markdown 多格式转换工具
     -h, --help              显示此帮助信息
 
 示例:
-    # 转换为 DOCX
-    $0 document.md
+    # 批量转换为 DOCX
+    $0 *.md
     
-    # 转换为 PDF 带目录
-    $0 -f pdf --toc document.md output.pdf
-    
-    # 转换为 HTML
-    $0 -f html --html-css github document.md
-    
-    # 转换为 PPT
-    $0 -f pptx document.md presentation.pptx
-
+    # 批量转换为 PDF 带目录
+    $0 -f pdf --toc file1.md file2.md
 EOF
 }
 
@@ -113,8 +112,8 @@ parse_args() {
                 OUTPUT_FORMAT="$2"
                 shift 2
                 ;;
-            -o|--output)
-                OUTPUT_FILE="$2"
+            --input-format)
+                INPUT_FORMAT="$2"
                 shift 2
                 ;;
             --no-template)
@@ -195,11 +194,7 @@ parse_args() {
                 exit 1
                 ;;
             *)
-                if [ -z "$INPUT_FILE" ]; then
-                    INPUT_FILE="$1"
-                elif [ -z "$OUTPUT_FILE" ]; then
-                    OUTPUT_FILE="$1"
-                fi
+                INPUT_FILES+=("$1")
                 shift
                 ;;
         esac
@@ -224,12 +219,24 @@ check_dependencies() {
 
 # 构建 Pandoc 命令
 build_pandoc_command() {
-    local cmd="pandoc \"$INPUT_FILE\""
+    local input_file="$1"
+    local output_file="$2"
+    local input_format="$3"
+    local cmd="pandoc \"$input_file\""
     
     # 基本选项
-    cmd="$cmd -f markdown"
+    if [ -n "$input_format" ]; then
+        cmd="$cmd -f $input_format"
+    else
+        cmd="$cmd -f markdown"
+    fi
+    
     cmd="$cmd -t $OUTPUT_FORMAT"
-    cmd="$cmd --lua-filter=\"$FILTER_DIR/mermaid.lua\""
+    
+    # 仅在 Markdown 输入时使用 Lua 过滤器
+    if [ "$input_format" == "markdown" ] || [ -z "$input_format" ]; then
+        cmd="$cmd --lua-filter=\"$FILTER_DIR/mermaid.lua\""
+    fi
     
     # 目录
     if [ "$TOC_ENABLED" = true ]; then
@@ -243,6 +250,12 @@ build_pandoc_command() {
     
     # 格式特定选项
     case $OUTPUT_FORMAT in
+        markdown)
+            # Markdown 输出：保持简洁
+            cmd="$cmd --standalone"
+            # 可选：指定 Markdown 变体（gfm=GitHub Flavored Markdown）
+            cmd="$cmd --to=gfm"
+            ;;
         docx)
             cmd="$cmd --mathml"
             if [ "$USE_TEMPLATE" = true ]; then
@@ -337,6 +350,10 @@ build_pandoc_command() {
                 cmd="$cmd --reference-doc=\"$TEMPLATE_DIR/reference.pptx\""
             fi
             ;;
+        txt)
+            # 纯文本输出：简单格式
+            cmd="$cmd --to=plain"
+            ;;
         epub)
             cmd="$cmd --mathml"
             if [ "$USE_TEMPLATE" = true ] && [ -f "$TEMPLATE_DIR/epub.css" ]; then
@@ -346,7 +363,7 @@ build_pandoc_command() {
     esac
     
     # 输出文件
-    cmd="$cmd -o \"$OUTPUT_FILE\""
+    cmd="$cmd -o \"$output_file\""
     
     echo "$cmd"
 }
@@ -356,44 +373,71 @@ main() {
     parse_args "$@"
     
     # 检查输入文件
-    if [ -z "$INPUT_FILE" ]; then
+    if [ ${#INPUT_FILES[@]} -eq 0 ]; then
         echo -e "${RED}错误: 未指定输入文件${NC}"
         show_help
         exit 1
     fi
     
-    if [ ! -f "$INPUT_FILE" ]; then
-        echo -e "${RED}错误: 文件不存在: $INPUT_FILE${NC}"
-        exit 1
-    fi
-    
-    # 生成输出文件名
-    if [ -z "$OUTPUT_FILE" ]; then
-        local base_name="${INPUT_FILE%.*}"
-        OUTPUT_FILE="${base_name}.${OUTPUT_FORMAT}"
-    fi
-    
     # 检查依赖
     check_dependencies
     
-    # 显示转换信息
-    echo -e "${BLUE}开始转换...${NC}"
-    echo -e "  输入: $INPUT_FILE"
-    echo -e "  输出: $OUTPUT_FILE"
+    echo -e "${BLUE}开始批量转换 ${#INPUT_FILES[@]} 个文件...${NC}"
     echo -e "  格式: $OUTPUT_FORMAT"
     echo ""
     
-    # 构建并执行命令
-    local pandoc_cmd=$(build_pandoc_command)
+    local success_count=0
+    local fail_count=0
     
-    if eval "$pandoc_cmd"; then
-        local file_size=$(du -h "$OUTPUT_FILE" | cut -f1)
+    for input_file in "${INPUT_FILES[@]}"; do
+        if [ ! -f "$input_file" ]; then
+            echo -e "${RED}错误: 文件不存在: $input_file${NC}"
+            ((fail_count++))
+            continue
+        fi
+        
+        # 生成输出文件名
+        local base_name="${input_file%.*}"
+        local ext="${OUTPUT_FORMAT}"
+        if [ "$ext" = "markdown" ]; then
+            ext="md"
+        fi
+        local output_file="${base_name}.${ext}"
+        
+        # 自动检测输入格式
+        local input_format="$INPUT_FORMAT"
+        if [ "$input_format" = "markdown" ] && command -v file &> /dev/null; then
+            local file_type=$(file -b "$input_file")
+            if [[ "$file_type" == *"Microsoft Word"* ]] || [[ "$file_type" == *"Word 2007+"* ]]; then
+                input_format="docx"
+                echo -e "${YELLOW}提示: 检测到输入文件为 Word 文档${NC}"
+            fi
+        fi
+        
+        echo -e "正在转换: $input_file -> $output_file"
+        
+        # 构建并执行命令
+        local pandoc_cmd=$(build_pandoc_command "$input_file" "$output_file" "$input_format")
+        
+        if eval "$pandoc_cmd"; then
+            local file_size=$(du -h "$output_file" | cut -f1)
+            echo -e "${GREEN}✓ 成功${NC} ($file_size)"
+            # 打开预览
+
+            ((success_count++))
+        else
+            echo -e "${RED}✗ 失败${NC}"
+            ((fail_count++))
+        fi
         echo ""
-        echo -e "${GREEN}✓ 转换成功!${NC}"
-        echo -e "  输出文件: $OUTPUT_FILE"
-        echo -e "  文件大小: $file_size"
+    done
+    
+    echo "----------------------------------------"
+    echo -e "转换完成: ${GREEN}$success_count 成功${NC}, ${RED}$fail_count 失败${NC}"
+    
+    if [ $fail_count -eq 0 ]; then
+        exit 0
     else
-        echo -e "${RED}✗ 转换失败${NC}"
         exit 1
     fi
 }

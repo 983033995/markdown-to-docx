@@ -1,0 +1,49 @@
+{
+  "fontFamily": "PingFang SC, -apple-system, BlinkMacSystemFont, sans-serif",
+  "theme": "default",
+  "themeVariables": {
+    "fontFamily": "PingFang SC, -apple-system, BlinkMacSystemFont, sans-serif",
+    "fontSize": "14px",
+    "primaryColor": "#fff",
+    "primaryTextColor": "#333",
+    "primaryBorderColor": "#4a90e2",
+    "lineColor": "#4a90e2",
+    "secondaryColor": "#f0f7ff",
+    "tertiaryColor": "#fafafa"
+  },
+  "flowchart": {
+    "useMaxWidth": true,
+    "htmlLabels": true,
+    "curve": "basis",
+    "padding": 20,
+    "nodeSpacing": 60,
+    "rankSpacing": 80,
+    "wrappingWidth": 300,
+    "diagramPadding": 20
+  },
+  "sequence": {
+    "useMaxWidth": true,
+    "wrap": true,
+    "wrapPadding": 10,
+    "boxMargin": 10,
+    "boxTextMargin": 6,
+    "noteMargin": 10,
+    "messageMargin": 35,
+    "mirrorActors": false,
+    "bottomMarginAdj": 1,
+    "actorFontSize": 14,
+    "noteFontSize": 12,
+    "messageFontSize": 13
+  },
+  "gantt": {
+    "useMaxWidth": true,
+    "fontSize": 12,
+    "barHeight": 24,
+    "barGap": 6,
+    "topPadding": 60,
+    "leftPadding": 100,
+    "gridLineStartPadding": 40,
+    "numberSectionStyles": 4,
+    "axisFormat": "%Y-%m-%d"
+  }
+}

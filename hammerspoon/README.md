@@ -37,7 +37,7 @@
 **解决**:
 ```bash
 # 重新运行安装脚本
-cd /Volumes/13759427003/工具/markdown-to-docx
+cd ~/markdown-to-docx  # 或您的项目路径
 ./install.sh
 ```
 
@@ -53,7 +53,8 @@ cd /Volumes/13759427003/工具/markdown-to-docx
 
 编辑 `~/.hammerspoon/init.lua`:
 ```lua
-dofile("/Volumes/13759427003/工具/markdown-to-docx/hammerspoon/init.lua")
+-- 请替换为您的实际项目路径
+dofile(os.getenv("HOME") .. "/markdown-to-docx/hammerspoon/init.lua")
 ```
 
 ## 卸载

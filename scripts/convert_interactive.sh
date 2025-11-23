@@ -167,32 +167,133 @@ step_select_format() {
     show_header
     echo -e "${BOLD}步骤 1/3: 选择输出格式${NC}"
     echo ""
-    echo -e "  ${GREEN}[1]${NC} DOCX  - Microsoft Word 文档"
-    echo -e "  ${GREEN}[2]${NC} PDF   - PDF 文档 (需要 LaTeX)"
-    echo -e "  ${GREEN}[3]${NC} HTML  - 网页文件"
-    echo -e "  ${GREEN}[4]${NC} PPTX  - PowerPoint 演示文稿"
-    echo -e "  ${GREEN}[5]${NC} EPUB  - 电子书"
+    
+    # 检测输入格式
+    local detected_format=$(detect_input_format "$INPUT_FILE")
+    echo -e "  检测到输入格式: ${CYAN}$(echo "$detected_format" | tr '[:lower:]' '[:upper:]')${NC}"
     echo ""
     
+    # 构建可用格式列表 (过滤掉输入格式,避免自己转自己)
+    local format_list=()
+    local format_names=()
+    local format_index=1
+    
+    # 定义所有格式
+    if [ "$detected_format" != "markdown" ]; then
+        format_list+=("markdown")
+        format_names+=("Markdown")
+        echo -e "  ${GREEN}[$format_index]${NC} Markdown  - Markdown 文档"
+        ((format_index++))
+    fi
+    
+    if [ "$detected_format" != "docx" ]; then
+        format_list+=("docx")
+        format_names+=("Word 文档")
+        echo -e "  ${GREEN}[$format_index]${NC} DOCX      - Microsoft Word 文档"
+        ((format_index++))
+    fi
+    
+    if [ "$detected_format" != "pdf" ]; then
+        format_list+=("pdf")
+        format_names+=("PDF 文档")
+        echo -e "  ${GREEN}[$format_index]${NC} PDF       - PDF 文档 (需要 PDF 引擎)"
+        ((format_index++))
+    fi
+    
+    if [ "$detected_format" != "html" ]; then
+        format_list+=("html")
+        format_names+=("网页")
+        echo -e "  ${GREEN}[$format_index]${NC} HTML      - 网页文件"
+        ((format_index++))
+    fi
+    
+    if [ "$detected_format" != "plain" ] && [ "$detected_format" != "txt" ]; then
+        format_list+=("txt")
+        format_names+=("纯文本")
+        echo -e "  ${GREEN}[$format_index]${NC} TXT       - 纯文本"
+        ((format_index++))
+    fi
+    
+    if [ "$detected_format" != "pptx" ]; then
+        format_list+=("pptx")
+        format_names+=("演示文稿")
+        echo -e "  ${GREEN}[$format_index]${NC} PPTX      - PowerPoint 演示文稿"
+        ((format_index++))
+    fi
+    
+    if [ "$detected_format" != "epub" ]; then
+        format_list+=("epub")
+        format_names+=("电子书")
+        echo -e "  ${GREEN}[$format_index]${NC} EPUB      - 电子书"
+        ((format_index++))
+    fi
+    
+    echo ""
+    
+    # 查找当前输出格式的索引
     local default_choice="1"
-    case $OUTPUT_FORMAT in
-        docx) default_choice="1" ;;
-        pdf) default_choice="2" ;;
-        html) default_choice="3" ;;
-        pptx) default_choice="4" ;;
-        epub) default_choice="5" ;;
-    esac
+    for i in "${!format_list[@]}"; do
+        if [ "${format_list[$i]}" = "$OUTPUT_FORMAT" ]; then
+            default_choice=$((i + 1))
+            break
+        fi
+    done
     
-    read_input "请选择 (1-5)" "$default_choice" choice
+    # 如果当前输出格式与输入格式相同,智能选择默认格式
+    if [ "$OUTPUT_FORMAT" = "$detected_format" ]; then
+        case $detected_format in
+            markdown)
+                # Markdown → DOCX
+                for i in "${!format_list[@]}"; do
+                    if [ "${format_list[$i]}" = "docx" ]; then
+                        default_choice=$((i + 1))
+                        OUTPUT_FORMAT="docx"
+                        break
+                    fi
+                done
+                ;;
+            docx)
+                # DOCX → Markdown
+                for i in "${!format_list[@]}"; do
+                    if [ "${format_list[$i]}" = "markdown" ]; then
+                        default_choice=$((i + 1))
+                        OUTPUT_FORMAT="markdown"
+                        break
+                    fi
+                done
+                ;;
+            html)
+                # HTML → DOCX
+                for i in "${!format_list[@]}"; do
+                    if [ "${format_list[$i]}" = "docx" ]; then
+                        default_choice=$((i + 1))
+                        OUTPUT_FORMAT="docx"
+                        break
+                    fi
+                done
+                ;;
+            *)
+                # 其他 → Markdown
+                for i in "${!format_list[@]}"; do
+                    if [ "${format_list[$i]}" = "markdown" ]; then
+                        default_choice=$((i + 1))
+                        OUTPUT_FORMAT="markdown"
+                        break
+                    fi
+                done
+                ;;
+        esac
+    fi
     
-    case $choice in
-        1) OUTPUT_FORMAT="docx" ;;
-        2) OUTPUT_FORMAT="pdf" ;;
-        3) OUTPUT_FORMAT="html" ;;
-        4) OUTPUT_FORMAT="pptx" ;;
-        5) OUTPUT_FORMAT="epub" ;;
-        *) OUTPUT_FORMAT="docx" ;;
-    esac
+    local max_choice=${#format_list[@]}
+    read_input "请选择 (1-$max_choice)" "$default_choice" choice
+    
+    # 验证输入并设置输出格式
+    if [ "$choice" -ge 1 ] && [ "$choice" -le "$max_choice" ]; then
+        OUTPUT_FORMAT="${format_list[$((choice - 1))]}"
+    else
+        OUTPUT_FORMAT="${format_list[0]}"
+    fi
 }
 
 # 步骤2: 文档选项
@@ -497,6 +598,7 @@ main() {
     local use_preset=""
     local use_config_file=""
     local interactive=true
+    local input_files=()
     
     # 解析参数
     while [[ $# -gt 0 ]]; do
@@ -523,17 +625,172 @@ main() {
                 exit 1
                 ;;
             *)
-                INPUT_FILE="$1"
+                input_files+=("$1")
                 shift
                 ;;
         esac
     done
     
     # 检查输入文件
-    if [ -z "$INPUT_FILE" ]; then
+    if [ ${#input_files[@]} -eq 0 ]; then
         show_help
         exit 1
     fi
+    
+    # 如果有多个文件，需要先交互配置再批量转换
+    if [ ${#input_files[@]} -gt 1 ]; then
+        echo -e "${YELLOW}检测到 ${#input_files[@]} 个文件，将使用相同配置批量转换${NC}"
+        echo ""
+        
+        # 使用第一个文件进行格式检测
+        INPUT_FILE="${input_files[0]}"
+        
+        # 加载配置
+        if [ -n "$use_preset" ]; then
+            if apply_preset "$use_preset"; then
+                echo -e "${GREEN}✓ 使用预设: $use_preset${NC}"
+                interactive=false
+            else
+                echo -e "${RED}错误: 未知预设: $use_preset${NC}"
+                exit 1
+            fi
+        elif [ -n "$use_config_file" ]; then
+            CONFIG_FILE="$use_config_file"
+            load_config_file
+            interactive=false
+        else
+            load_last_config
+        fi
+        
+        # 交互式流程（如果需要）
+        if [ "$interactive" = true ]; then
+            step_select_format
+            step_document_options
+            step_format_specific
+            
+            # 显示批量转换摘要
+            show_header
+            echo -e "${BOLD}批量转换配置摘要${NC}"
+            echo ""
+            echo -e "  文件数量:   ${CYAN}${#input_files[@]}${NC}"
+            echo -e "  输出格式:   ${GREEN}$(echo "$OUTPUT_FORMAT" | tr '[:lower:]' '[:upper:]')${NC}"
+            echo -e "  生成目录:   ${YELLOW}$TOC_ENABLED${NC}"
+            echo -e "  章节编号:   ${YELLOW}$NUMBER_SECTIONS${NC}"
+            
+            case $OUTPUT_FORMAT in
+                docx)
+                    echo -e "  Word 模板:  ${YELLOW}$DOCX_TEMPLATE${NC}"
+                    ;;
+                pdf)
+                    echo -e "  PDF 预设:   ${YELLOW}$PDF_PRESET${NC}"
+                    ;;
+                html)
+                    echo -e "  HTML 主题:  ${YELLOW}$HTML_THEME${NC}"
+                    ;;
+                pptx)
+                    echo -e "  PPT 风格:   ${YELLOW}$PPT_STYLE${NC}"
+                    ;;
+            esac
+            
+            echo ""
+            echo -e "${YELLOW}按 Enter 开始批量转换,或输入 'q' 取消: ${NC}"
+            read -r confirm
+            
+            if [ "$confirm" = "q" ] || [ "$confirm" = "Q" ]; then
+                echo -e "${RED}已取消${NC}"
+                exit 0
+            fi
+        fi
+        
+        # 构建批量转换命令（使用数组避免参数分割问题）
+        local batch_args=()
+        
+        # 检测输入格式
+        if [ "$INPUT_FORMAT" = "auto" ]; then
+            INPUT_FORMAT=$(detect_input_format "$INPUT_FILE")
+        fi
+        
+        # 如果输入格式不是 markdown,添加 --input-format 参数
+        if [ "$INPUT_FORMAT" != "markdown" ]; then
+            batch_args+=("--input-format" "$INPUT_FORMAT")
+        fi
+        
+        # 添加格式参数
+        batch_args+=("-f" "$OUTPUT_FORMAT")
+        
+        # 添加其他选项
+        if [ "$TOC_ENABLED" = "y" ] || [ "$TOC_ENABLED" = "Y" ]; then
+            batch_args+=("--toc")
+        fi
+        
+        if [ "$NUMBER_SECTIONS" = "y" ] || [ "$NUMBER_SECTIONS" = "Y" ]; then
+            batch_args+=("--number-sections")
+        fi
+        
+        # 添加格式特定选项
+        case $OUTPUT_FORMAT in
+            docx)
+                batch_args+=("--docx-template" "$DOCX_TEMPLATE")
+                ;;
+            pptx)
+                batch_args+=("--pptx-style" "$PPT_STYLE")
+                ;;
+            html)
+                batch_args+=("--html-css" "$HTML_THEME")
+                ;;
+            pdf)
+                # 检测 PDF 引擎
+                local pdf_engine
+                if [ -f "$SCRIPT_DIR/detect_pdf_engine.sh" ]; then
+                    pdf_engine=$("$SCRIPT_DIR/detect_pdf_engine.sh")
+                    if [ $? -eq 0 ] && [ -n "$pdf_engine" ] && [ "$pdf_engine" != "none" ]; then
+                        batch_args+=("--pdf-engine" "$pdf_engine")
+                    fi
+                fi
+                
+                # 添加 PDF 预设参数
+                case $PDF_PRESET in
+                    academic)
+                        batch_args+=("--margin-top" "2.5cm" "--margin-bottom" "2.5cm")
+                        batch_args+=("--margin-left" "3cm" "--margin-right" "3cm")
+                        batch_args+=("--fontsize" "12pt" "--papersize" "a4")
+                        ;;
+                    technical)
+                        batch_args+=("--margin-top" "2cm" "--margin-bottom" "2cm")
+                        batch_args+=("--margin-left" "2.5cm" "--margin-right" "2.5cm")
+                        batch_args+=("--fontsize" "11pt" "--papersize" "a4")
+                        ;;
+                    book)
+                        batch_args+=("--margin-top" "3cm" "--margin-bottom" "3cm")
+                        batch_args+=("--margin-left" "3.5cm" "--margin-right" "2.5cm")
+                        batch_args+=("--fontsize" "10pt" "--papersize" "a5")
+                        ;;
+                    standard)
+                        batch_args+=("--margin-top" "2.5cm" "--margin-bottom" "2.5cm")
+                        batch_args+=("--margin-left" "2.5cm" "--margin-right" "2.5cm")
+                        batch_args+=("--fontsize" "12pt" "--papersize" "a4")
+                        ;;
+                esac
+                ;;
+        esac
+        
+        # 添加所有输入文件
+        for file in "${input_files[@]}"; do
+            batch_args+=("$file")
+        done
+        
+        # 执行批量转换
+        echo ""
+        "$SCRIPT_DIR/convert_multi.sh" "${batch_args[@]}"
+        
+        # 保存配置
+        save_last_config
+        
+        exit $?
+    fi
+    
+    # 单文件处理
+    INPUT_FILE="${input_files[0]}"
     
     if [ ! -f "$INPUT_FILE" ]; then
         echo -e "${RED}错误: 文件不存在: $INPUT_FILE${NC}"

@@ -1,8 +1,8 @@
 {
-  "fontFamily": "PingFang SC, sans-serif",
+  "fontFamily": "PingFang SC, Heiti SC, Microsoft YaHei, SimHei, sans-serif",
   "theme": "default",
   "themeVariables": {
-    "fontFamily": "PingFang SC, sans-serif",
+    "fontFamily": "PingFang SC, Heiti SC, Microsoft YaHei, SimHei, sans-serif",
     "fontSize": "12px",
     "primaryColor": "#fff",
     "primaryTextColor": "#333",

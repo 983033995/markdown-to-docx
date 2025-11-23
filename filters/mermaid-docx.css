@@ -1,0 +1,46 @@
+/* DOCX 输出优化配置 - 适用于 Word 文档 */
+
+/* 基础字体设置 - Word 兼容字体 */
+body, svg, text, tspan, .node, .edgeLabel, .label, .cluster-label {
+    font-family: "PingFang SC", "Heiti SC", "Microsoft YaHei", "SimHei", sans-serif !important;
+    font-size: 12px !important;
+}
+
+/* 节点样式 - 简洁清晰 */
+.node rect, .node circle, .node polygon, .node path {
+    stroke-width: 1.5px;
+}
+
+/* 连线样式 */
+.edgePath .path {
+    stroke-width: 1.5px;
+}
+
+/* 文字颜色 */
+.label, .node text, .edgeLabel {
+    fill: #333 !important;
+    color: #333 !important;
+}
+
+/* 文本换行和显示 - Word 优化 */
+.nodeLabel, .edgeLabel {
+    white-space: normal !important;
+    word-break: keep-all !important;
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
+    line-height: 1.4 !important;
+}
+
+/* 节点内边距 */
+.node rect, .node circle, .node polygon {
+    padding: 12px !important;
+}
+
+/* 长文本优化 */
+foreignObject {
+    overflow: visible !important;
+}
+
+.label-container {
+    padding: 8px 12px !important;
+}

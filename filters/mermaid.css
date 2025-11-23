@@ -1,0 +1,43 @@
+/* 强制设置所有文本元素的字体 */
+body, svg, text, tspan, .node, .edgeLabel, .label, .cluster-label {
+    font-family: "PingFang SC", "Heiti SC", "Microsoft YaHei", "SimHei", sans-serif !important;
+    font-size: 13px !important;
+}
+
+/* 针对不同类型的图表元素 */
+.node rect, .node circle, .node polygon, .node path {
+    stroke-width: 1.5px;
+}
+
+.edgePath .path {
+    stroke-width: 1.5px;
+}
+
+/* 确保文字颜色可见 */
+.label, .node text, .edgeLabel {
+    fill: #333 !important;
+    color: #333 !important;
+}
+
+/* 优化文本换行和显示 */
+.nodeLabel, .edgeLabel {
+    white-space: normal !important;
+    word-break: keep-all !important;
+    word-wrap: normal !important;
+    overflow-wrap: normal !important;
+    line-height: 1.4 !important;
+}
+
+/* 确保节点有足够的内边距 */
+.node rect, .node circle, .node polygon {
+    padding: 12px !important;
+}
+
+/* 优化长文本显示 */
+foreignObject {
+    overflow: visible !important;
+}
+
+.label-container {
+    padding: 8px 12px !important;
+}
