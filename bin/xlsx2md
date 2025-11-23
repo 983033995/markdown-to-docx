@@ -1,0 +1,12 @@
+#!/bin/bash
+# xlsx2md - Excel 转 Markdown 表格工具
+# 支持单 sheet 和多 sheet 转换
+
+set -e
+
+# 获取安装目录
+INSTALL_DIR="$(cd "$(dirname "$(dirname "$(readlink -f "$0" || echo "$0")")")" && pwd)"
+SCRIPTS_DIR="$INSTALL_DIR/scripts"
+
+# 调用转换脚本
+exec "$SCRIPTS_DIR/xlsx2md.sh" "$@"

@@ -1,5 +1,48 @@
 # 更新日志
 
+## v2.2.0 - 2024-11-23
+
+### 🎉 新功能
+
+#### Excel 转换支持
+- ✅ **Markdown → Excel**: 将 Markdown 表格转换为 Excel 文件
+  - 支持单表格和多表格转换
+  - 自动检测表格数量,智能选择单/多 sheet 模式
+  - 表头自动格式化(加粗、灰色背景、居中对齐)
+  - 自动调整列宽
+  - 使用标题作为 sheet 名称
+  
+- ✅ **Excel → Markdown**: 将 Excel 文件转换为 Markdown 表格
+  - 支持转换所有 sheet 或指定 sheet
+  - 支持按 sheet 名称或索引选择
+  - 自动生成标准 Markdown 表格格式
+  - 保留表头行
+
+#### 新增工具
+- `md2xlsx`: Markdown 表格转 Excel 命令行工具
+- `xlsx2md`: Excel 转 Markdown 表格命令行工具
+
+#### 使用示例
+```bash
+# Markdown → Excel
+md2xlsx document.md                    # 自动模式
+md2xlsx -m document.md output.xlsx     # 多 sheet 模式
+md2xlsx -s document.md                 # 单 sheet 模式
+
+# Excel → Markdown
+xlsx2md data.xlsx                      # 转换所有 sheet
+xlsx2md -s 1 data.xlsx                 # 转换第一个 sheet
+xlsx2md -s "销售数据" data.xlsx        # 转换指定 sheet
+```
+
+### 🔧 技术实现
+- 使用 Pandoc 提取 Markdown 表格
+- 使用 openpyxl 库处理 Excel 文件
+- Python 脚本实现表格解析和格式化
+- 完整的错误处理和用户提示
+
+---
+
 ## v2.1.1 - 2024-11-22
 
 ### 🔧 CLI 格式选择优化

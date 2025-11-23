@@ -1,0 +1,12 @@
+#!/bin/bash
+# md2xlsx - Markdown 表格转 Excel 工具
+# 支持单表格和多表格转换
+
+set -e
+
+# 获取安装目录
+INSTALL_DIR="$(cd "$(dirname "$(dirname "$(readlink -f "$0" || echo "$0")")")" && pwd)"
+SCRIPTS_DIR="$INSTALL_DIR/scripts"
+
+# 调用转换脚本
+exec "$SCRIPTS_DIR/md2xlsx.sh" "$@"
