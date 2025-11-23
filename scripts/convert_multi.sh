@@ -417,13 +417,26 @@ main() {
             if [[ "$file_type" == *"Microsoft Word"* ]] || [[ "$file_type" == *"Word 2007+"* ]]; then
                 input_format="docx"
                 echo -e "${YELLOW}提示: 检测到输入文件为 Word 文档${NC}"
+            elif [[ "$file_type" == *"Microsoft Excel"* ]] || [[ "$file_type" == *"Zip archive"* ]] && [[ "$input_file" == *.xlsx ]]; then
+                input_format="xlsx"
+                echo -e "${YELLOW}提示: 检测到输入文件为 Excel 文档${NC}"
             fi
         fi
         
         echo -e "正在转换: $input_file -> $output_file"
         
-        # Excel 转换使用专用脚本
-        if [ "$OUTPUT_FORMAT" = "xlsx" ]; then
+        # Excel 输入转换使用专用脚本
+        if [ "$input_format" = "xlsx" ]; then
+            if "$SCRIPT_DIR/xlsx2md.sh" "$input_file" "$output_file" > /dev/null 2>&1; then
+                local file_size=$(du -h "$output_file" | cut -f1)
+                echo -e "${GREEN}✓ 成功${NC} ($file_size)"
+                ((success_count++))
+            else
+                echo -e "${RED}✗ 失败${NC}"
+                ((fail_count++))
+            fi
+        # Excel 输出转换使用专用脚本
+        elif [ "$OUTPUT_FORMAT" = "xlsx" ]; then
             if "$SCRIPT_DIR/md2xlsx.sh" "$input_file" "$output_file" > /dev/null 2>&1; then
                 local file_size=$(du -h "$output_file" | cut -f1)
                 echo -e "${GREEN}✓ 成功${NC} ($file_size)"
