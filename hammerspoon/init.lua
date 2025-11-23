@@ -242,6 +242,10 @@ local function detectInputFormat(filename)
         -- EPUB
         epub = "epub",
         
+        -- Excel
+        xlsx = "xlsx",
+        xls = "xlsx",
+        
         -- Plain Text
         txt = "txt",
         text = "txt",
@@ -896,6 +900,12 @@ local function updateFileList()
                 </select>
             </div>
 
+    ]]
+    
+    -- 根据格式决定是否显示 TOC 和编号选项
+    -- Excel 格式不需要这些选项
+    if state.currentFormat ~= "xlsx" then
+        html = html .. [[
             <!-- Module 3: Table of Contents -->
             <div class="config-module">
                 <div class="module-title">生成目录</div>
@@ -915,6 +925,10 @@ local function updateFileList()
                     <span style="font-size:12px; color:var(--text-primary);">启用</span>
                 </label>
             </div>
+        ]]
+    end
+    
+    html = html .. [[
     ]]
     
     -- 5. 高级选项 (Merged into Grid, no toggle)
