@@ -1259,7 +1259,7 @@ local function selectFiles()
         local script = [[
             tell application "System Events"
                 activate
-                set selectedFiles to choose file with prompt "选择文档文件（支持 Markdown, Word, HTML, TXT 等）" of type {"md", "markdown", "docx", "doc", "html", "htm", "txt", "text", "tex", "epub", "rst", "org"} with multiple selections allowed
+                set selectedFiles to choose file with prompt "选择文档文件（支持 Markdown, Word, Excel, HTML, TXT 等）" of type {"md", "markdown", "docx", "doc", "xlsx", "xls", "html", "htm", "txt", "text", "tex", "epub", "rst", "org"} with multiple selections allowed
                 set filePaths to {}
                 repeat with aFile in selectedFiles
                     set end of filePaths to POSIX path of aFile
@@ -1288,6 +1288,8 @@ local function selectFiles()
                                     state.currentFormat = "docx"  -- Markdown → Word
                                 elseif inputFormat == "docx" then
                                     state.currentFormat = "markdown"  -- Word → Markdown
+                                elseif inputFormat == "xlsx" then
+                                    state.currentFormat = "markdown"  -- Excel → Markdown
                                 elseif inputFormat == "html" then
                                     state.currentFormat = "docx"  -- HTML → Word
                                 else

@@ -4,6 +4,12 @@
 
 ### 🔧 GUI Excel 支持优化
 
+#### 文件选择器
+- ✅ **支持选择 Excel 文件**
+  - 文件选择对话框添加 .xlsx 和 .xls 类型
+  - 提示文本更新为"支持 Markdown, Word, Excel, HTML, TXT 等"
+  - 智能格式选择: Excel → Markdown
+
 #### 文件类型检测
 - ✅ **支持 Excel 文件输入**
   - 添加 .xlsx 和 .xls 格式检测
