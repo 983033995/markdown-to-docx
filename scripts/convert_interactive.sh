@@ -228,6 +228,13 @@ step_select_format() {
         ((format_index++))
     fi
     
+    if [ "$detected_format" != "xlsx" ]; then
+        format_list+=("xlsx")
+        format_names+=("Excel 表格")
+        echo -e "  ${GREEN}[$format_index]${NC} XLSX      - Excel 表格 (从 Markdown 表格)"
+        ((format_index++))
+    fi
+    
     echo ""
     
     # 查找当前输出格式的索引

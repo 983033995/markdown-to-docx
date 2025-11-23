@@ -21,10 +21,10 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-# 检查是否使用快速模式
-if [ "$1" = "-q" ] || [ "$1" = "--quick" ]; then
-    shift
-    "$INSTALL_DIR/scripts/convert.sh" "$@"
+# 检查是否使用快速模式或指定了格式
+if [ "$1" = "-q" ] || [ "$1" = "--quick" ] || [ "$1" = "-f" ] || [ "$1" = "--format" ]; then
+    # 使用 convert_multi.sh 支持更多格式
+    "$INSTALL_DIR/scripts/convert_multi.sh" "$@"
 else
     # 默认使用交互式模式
     "$INSTALL_DIR/scripts/convert_interactive.sh" "$@"

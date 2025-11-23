@@ -360,6 +360,12 @@ build_pandoc_command() {
                 cmd="$cmd --css=\"$TEMPLATE_DIR/epub.css\""
             fi
             ;;
+        xlsx)
+            # Excel 转换使用专用脚本
+            # 不使用 Pandoc,直接返回空命令
+            echo ""
+            return 0
+            ;;
     esac
     
     # 输出文件
@@ -416,18 +422,30 @@ main() {
         
         echo -e "正在转换: $input_file -> $output_file"
         
-        # 构建并执行命令
-        local pandoc_cmd=$(build_pandoc_command "$input_file" "$output_file" "$input_format")
-        
-        if eval "$pandoc_cmd"; then
-            local file_size=$(du -h "$output_file" | cut -f1)
-            echo -e "${GREEN}✓ 成功${NC} ($file_size)"
-            # 打开预览
-
-            ((success_count++))
+        # Excel 转换使用专用脚本
+        if [ "$OUTPUT_FORMAT" = "xlsx" ]; then
+            if "$SCRIPT_DIR/md2xlsx.sh" "$input_file" "$output_file" > /dev/null 2>&1; then
+                local file_size=$(du -h "$output_file" | cut -f1)
+                echo -e "${GREEN}✓ 成功${NC} ($file_size)"
+                ((success_count++))
+            else
+                echo -e "${RED}✗ 失败${NC}"
+                ((fail_count++))
+            fi
         else
-            echo -e "${RED}✗ 失败${NC}"
-            ((fail_count++))
+            # 构建并执行 Pandoc 命令
+            local pandoc_cmd=$(build_pandoc_command "$input_file" "$output_file" "$input_format")
+            
+            if eval "$pandoc_cmd"; then
+                local file_size=$(du -h "$output_file" | cut -f1)
+                echo -e "${GREEN}✓ 成功${NC} ($file_size)"
+                # 打开预览
+
+                ((success_count++))
+            else
+                echo -e "${RED}✗ 失败${NC}"
+                ((fail_count++))
+            fi
         fi
         echo ""
     done

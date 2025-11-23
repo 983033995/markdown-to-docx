@@ -1,5 +1,36 @@
 # 更新日志
 
+## v2.4.0 - 2024-11-23
+
+### 🔗 Excel 集成到 CLI 和 GUI
+
+#### CLI 集成
+- ✅ **mdconv 支持 Excel 格式**
+  - `mdconv -f xlsx document.md` 直接转换为 Excel
+  - 交互式菜单新增 Excel 选项
+  - 与其他格式统一的使用体验
+
+#### 后端集成
+- ✅ **convert_multi.sh 支持 Excel**
+  - 自动调用 md2xlsx.sh
+  - 统一的批量转换接口
+  - 完整的错误处理
+
+#### 使用示例
+```bash
+# 命令行直接转换
+mdconv -f xlsx tables.md
+
+# 交互式选择 Excel
+mdconv tables.md
+# 然后在菜单中选择 XLSX
+
+# 批量转换
+mdconv -f xlsx *.md
+```
+
+---
+
 ## v2.3.0 - 2024-11-23
 
 ### 🎨 CLI 体验优化
