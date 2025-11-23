@@ -10,6 +10,12 @@
   - 交互式菜单新增 Excel 选项
   - 与其他格式统一的使用体验
 
+#### GUI 集成
+- ✅ **Hammerspoon GUI 支持 Excel**
+  - 格式选择器新增 "Excel 表格" 选项
+  - 图标: 📊
+  - 完整的 GUI 支持
+
 #### 后端集成
 - ✅ **convert_multi.sh 支持 Excel**
   - 自动调用 md2xlsx.sh

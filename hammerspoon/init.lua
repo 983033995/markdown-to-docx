@@ -88,7 +88,8 @@ local formats = {
     {id = "html", name = "网页", icon = "🌐"},
     {id = "txt", name = "纯文本", icon = "📃"},
     {id = "pptx", name = "演示文稿", icon = "📊"},
-    {id = "epub", name = "电子书", icon = "📚"}
+    {id = "epub", name = "电子书", icon = "📚"},
+    {id = "xlsx", name = "Excel 表格", icon = "📊"}
 }
 
 -- 预设配置定义
